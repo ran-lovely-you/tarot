@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タロット占い</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --deep: #0e0a22;
+  --mid: #1a1035;
+  --purple: #6b3fa0;
+  --purple-light: #9b6fd4;
+  --gold: #d4af37;
+  --gold-light: #f0d060;
+  --moon: #f0eefc;
+  --text: #e8e4f8;
+  --muted: #9a94c0;
+  --card-back: #1d1540;
+  --card-border: #4a2e7a;
+}
+
+body {
+  background: var(--deep);
+  color: var(--text);
+  font-family: 'Noto Serif JP', serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ---- 星空背景 ---- */
+#stars {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ---- レイアウト ---- */
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 20px 80px;
+}
+
+header {
+  text-align: center;
+  padding: 50px 0 30px;
+}
+
+.title-en {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(18px, 4vw, 30px);
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(212,175,55,0.4);
+}
+
+.title-ja {
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.ornament {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  margin: 18px 0;
+  color: var(--gold);
+  opacity: 0.5;
+  font-size: 20px;
+}
+.ornament::before, .ornament::after {
+  content: '';
+  flex: 1;
+  max-width: 160px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+/* ---- セクション共通 ---- */
+section { margin-bottom: 40px; }
+.section-title {
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* ---- スプレッド選択 ---- */
+.spread-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.spread-btn {
+  background: rgba(26,16,53,0.7);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 20px 16px;
+  cursor: pointer;
+  transition: all 0.25s;
+  text-align: center;
+  color: var(--text);
+  font-family: 'Noto Serif JP', serif;
+}
+.spread-btn:hover {
+  border-color: var(--purple-light);
+  background: rgba(107,63,160,0.2);
+  transform: translateY(-2px);
+}
+.spread-btn.active {
+  border-color: var(--gold);
+  background: rgba(212,175,55,0.1);
+  box-shadow: 0 0 18px rgba(212,175,55,0.2);
+}
+.spread-btn .s-icon { font-size: 28px; margin-bottom: 8px; }
+.spread-btn .s-name { font-size: 15px; font-weight: 600; }
+.spread-btn .s-desc { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+/* ---- トピック選択 ---- */
+.topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+.topic-chip {
+  background: rgba(26,16,53,0.7);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 14px 12px;
+  cursor: pointer;
+  transition: all 0.25s;
+  text-align: center;
+  color: var(--muted);
+  font-family: 'Noto Serif JP', serif;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+.topic-chip:hover {
+  border-color: var(--purple-light);
+  color: var(--text);
+}
+.topic-chip.selected {
+  border-color: var(--gold);
+  background: rgba(212,175,55,0.1);
+  color: var(--gold-light);
+  box-shadow: 0 0 14px rgba(212,175,55,0.15);
+}
+.topic-chip .t-icon { font-size: 22px; }
+.topic-hint {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 10px;
+  letter-spacing: 0.1em;
+}
+
+/* ---- 質問入力 ---- */
+.q-wrap { position: relative; }
+.q-wrap textarea {
+  width: 100%;
+  min-height: 80px;
+  background: rgba(26,16,53,0.8);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 16px;
+  color: var(--text);
+  font-family: 'Noto Serif JP', serif;
+  font-size: 15px;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.q-wrap textarea:focus { border-color: var(--purple-light); }
+.q-wrap textarea::placeholder { color: var(--muted); }
+
+/* ---- シャッフルボタン ---- */
+.btn-primary {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, var(--purple) 0%, #4a2070 100%);
+  border: 1px solid var(--purple-light);
+  border-radius: 50px;
+  color: var(--moon);
+  font-family: 'Noto Serif JP', serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 20px rgba(107,63,160,0.4);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(107,63,160,0.5);
+  background: linear-gradient(135deg, var(--purple-light) 0%, var(--purple) 100%);
+}
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* ---- カードエリア ---- */
+#card-area {
+  display: none;
+  margin-bottom: 40px;
+}
+
+.spread-label {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.cards-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+/* ---- カード本体 ---- */
+.card-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-pos-label {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  opacity: 0.7;
+}
+
+.card {
+  width: 90px;
+  height: 154px;
+  perspective: 800px;
+  cursor: pointer;
+}
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.4,0,0.2,1);
+  border-radius: 10px;
+}
+.card.flipped .card-inner { transform: rotateY(180deg); }
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  border: 1.5px solid var(--card-border);
+}
+
+/* 裏面 */
+.card-back-face {
+  background: var(--card-back);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-back-pattern {
+  width: 80%;
+  height: 86%;
+  border: 1px solid rgba(107,63,160,0.5);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-back-pattern svg { width: 60%; height: 60%; opacity: 0.5; }
+
+/* 表面 */
+.card-front-face {
+  transform: rotateY(180deg);
+  background: var(--mid);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 6px;
+}
+.card-front-face.reversed { transform: rotateY(180deg) rotate(180deg); }
+
+.card-symbol {
+  font-size: 36px;
+  line-height: 1;
+  filter: drop-shadow(0 0 8px rgba(212,175,55,0.4));
+}
+.card-name {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  text-align: center;
+  line-height: 1.4;
+}
+.card-number {
+  font-size: 8px;
+  color: var(--muted);
+  font-family: 'Cinzel Decorative', serif;
+}
+.reversed-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  font-size: 8px;
+  background: rgba(107,63,160,0.5);
+  color: var(--purple-light);
+  padding: 2px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  display: none;
+}
+.card.flipped .reversed-badge { display: block; }
+
+/* ---- 鑑定結果 ---- */
+#reading-area {
+  display: none;
+}
+
+.reading-card {
+  background: rgba(26,16,53,0.85);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 20px;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s, transform 0.5s;
+}
+.reading-card.visible { opacity: 1; transform: translateY(0); }
+
+.reading-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(107,63,160,0.3);
+}
+.reading-symbol { font-size: 32px; }
+.reading-meta {}
+.reading-position {
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  color: var(--gold);
+  margin-bottom: 3px;
+}
+.reading-card-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--moon);
+}
+.reading-reversed {
+  font-size: 10px;
+  color: var(--purple-light);
+  letter-spacing: 0.1em;
+  margin-top: 2px;
+}
+
+.reading-text {
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--text);
+}
+
+.reading-overall {
+  background: linear-gradient(135deg, rgba(107,63,160,0.2), rgba(26,16,53,0.6));
+  border: 1px solid var(--gold);
+  border-radius: 16px;
+  padding: 28px;
+  margin-top: 10px;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s, transform 0.5s;
+}
+.reading-overall.visible { opacity: 1; transform: translateY(0); }
+.reading-overall-title {
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: var(--gold);
+  margin-bottom: 14px;
+}
+.reading-overall-text {
+  font-size: 15px;
+  line-height: 2;
+  color: var(--moon);
+}
+
+/* ---- もう一度ボタン ---- */
+.btn-reset {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  margin: 30px auto 0;
+  padding: 14px 28px;
+  background: transparent;
+  border: 1px solid var(--muted);
+  border-radius: 50px;
+  color: var(--muted);
+  font-family: 'Noto Serif JP', serif;
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.btn-reset:hover { border-color: var(--text); color: var(--text); }
+
+/* ---- hint ---- */
+.hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 10px;
+  letter-spacing: 0.1em;
+}
+
+/* ---- loading ---- */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  display: none;
+}
+.loading span {
+  display: inline-block;
+  animation: pulse 1.4s infinite;
+}
+.loading span:nth-child(2) { animation-delay: 0.2s; }
+.loading span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pulse {
+  0%,100%{opacity:0.3} 50%{opacity:1}
+}
+
+/* ---- シャッフルアニメ ---- */
+@keyframes shuffle-fly {
+  0% { transform: translate(0,0) rotate(0deg); opacity:1; }
+  50% { transform: translate(var(--dx), var(--dy)) rotate(var(--dr)); opacity:0.6; }
+  100% { transform: translate(0,0) rotate(0deg); opacity:1; }
+}
+.shuffling { animation: shuffle-fly 0.6s ease-in-out; }
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+
+<div class="wrap">
+
+<header>
+  <div class="title-en">Tarot Reading</div>
+  <div class="title-ja">タロット占い鑑定</div>
+  <div class="ornament">✦</div>
+</header>
+
+<!-- スプレッド選択 -->
+<section id="sec-spread">
+  <div class="section-title">◈ スプレッドを選ぶ ◈</div>
+  <div class="spread-grid">
+    <button class="spread-btn active" data-spread="one" onclick="selectSpread(this)">
+      <div class="s-icon">🌙</div>
+      <div class="s-name">1枚引き</div>
+      <div class="s-desc">今日の流れ・シンプルな答え</div>
+    </button>
+    <button class="spread-btn" data-spread="three" onclick="selectSpread(this)">
+      <div class="s-icon">☀✦☽</div>
+      <div class="s-name">三択スプレッド</div>
+      <div class="s-desc">過去・現在・未来</div>
+    </button>
+    <button class="spread-btn" data-spread="cross" onclick="selectSpread(this)">
+      <div class="s-icon">✠</div>
+      <div class="s-name">ケルト十字</div>
+      <div class="s-desc">5枚・状況の深い分析</div>
+    </button>
+    <button class="spread-btn" data-spread="love" onclick="selectSpread(this)">
+      <div class="s-icon">♡</div>
+      <div class="s-name">恋愛スプレッド</div>
+      <div class="s-desc">3枚・恋の流れを読む</div>
+    </button>
+  </div>
+</section>
+
+<!-- トピック選択 -->
+<section>
+  <div class="section-title">◈ 占いたいトピックを選ぶ（複数選択可）◈</div>
+  <div class="topic-grid" id="topic-grid">
+    <div class="topic-chip" data-topic="future" onclick="toggleTopic(this)">
+      <div class="t-icon">🔮</div>未来の運勢
+    </div>
+    <div class="topic-chip" data-topic="love" onclick="toggleTopic(this)">
+      <div class="t-icon">💞</div>恋愛・結婚運
+    </div>
+    <div class="topic-chip" data-topic="money" onclick="toggleTopic(this)">
+      <div class="t-icon">💰</div>仕事・お金運
+    </div>
+    <div class="topic-chip" data-topic="health" onclick="toggleTopic(this)">
+      <div class="t-icon">🌿</div>健康・体調
+    </div>
+    <div class="topic-chip" data-topic="caution" onclick="toggleTopic(this)">
+      <div class="t-icon">⚠️</div>人生の注意点
+    </div>
+    <div class="topic-chip" data-topic="relationship" onclick="toggleTopic(this)">
+      <div class="t-icon">🤝</div>人間関係
+    </div>
+    <div class="topic-chip" data-topic="yearly" onclick="toggleTopic(this)">
+      <div class="t-icon">🎍</div>今年の運気
+    </div>
+    <div class="topic-chip" data-topic="advice" onclick="toggleTopic(this)">
+      <div class="t-icon">🍀</div>開運アドバイス
+    </div>
+  </div>
+  <div class="topic-hint">選択しない場合は、全体的な鑑定のみ表示されます</div>
+</section>
+
+<!-- 質問入力 -->
+<section>
+  <div class="section-title">◈ 占いたいことを書く（任意）◈</div>
+  <div class="q-wrap">
+    <textarea id="question" placeholder="例：転職について、彼との関係、今後の運勢…何でも書いてください。"></textarea>
+  </div>
+</section>
+
+<!-- シャッフル -->
+<section style="text-align:center">
+  <button class="btn-primary" id="btn-shuffle" onclick="startReading()">🔮 &nbsp;カードをシャッフルする</button>
+  <div class="hint">カードをクリックして1枚ずつめくってください</div>
+</section>
+
+<!-- カードエリア -->
+<div id="card-area">
+  <div class="section-title" id="spread-title"></div>
+  <div class="cards-row" id="cards-row"></div>
+</div>
+
+<!-- 鑑定中 -->
+<div class="loading" id="loading">
+  <span>鑑</span><span>定</span><span>中</span>
+  <span>…</span>
+</div>
+
+<!-- 鑑定結果 -->
+<div id="reading-area">
+  <div class="section-title">◈ 鑑定結果 ◈</div>
+  <div id="reading-cards"></div>
+  <div class="reading-overall" id="reading-overall">
+    <div class="reading-overall-title">◈ 総合メッセージ ◈</div>
+    <div class="reading-overall-text" id="overall-text"></div>
+  </div>
+  <div id="topic-readings"></div>
+  <button class="btn-reset" onclick="resetAll()">✦ もう一度占う ✦</button>
+</div>
+
+</div>
+
+<script>
+/* ===== 星空 ===== */
+(function(){
+  const c = document.getElementById('stars');
+  const ctx = c.getContext('2d');
+  let W, H, stars=[];
+  function resize(){ W=c.width=window.innerWidth; H=c.height=window.innerHeight; init(); }
+  function init(){
+    stars=[];
+    for(let i=0;i<220;i++){
+      stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+0.3,a:Math.random(),s:Math.random()*0.008+0.002,d:Math.random()<0.5?1:-1});
+    }
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    stars.forEach(s=>{
+      s.a+=s.s*s.d;
+      if(s.a>1||s.a<0) s.d*=-1;
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(230,220,255,${s.a})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize',resize);
+  resize(); draw();
+})();
+
+/* ===== タロットデータ ===== */
+const MAJOR = [
+  {n:"0",name:"愚者",sym:"🃏",keywords:["自由","冒険","純粋さ","新たな出発"],rev_keywords:["無謀","現実逃避","準備不足"]},
+  {n:"I",name:"魔術師",sym:"🎩",keywords:["意志力","スキル","創造力","行動"],rev_keywords:["欺き","操作","能力の浪費"]},
+  {n:"II",name:"女教皇",sym:"📖",keywords:["直感","内なる知恵","神秘","静寂"],rev_keywords:["秘密","表面的知識","判断ミス"]},
+  {n:"III",name:"女帝",sym:"👑",keywords:["豊かさ","母性","創造","自然"],rev_keywords:["過保護","依存","不毛"]},
+  {n:"IV",name:"皇帝",sym:"⚔️",keywords:["権威","安定","リーダーシップ","秩序"],rev_keywords:["独裁","頑固","支配欲"]},
+  {n:"V",name:"教皇",sym:"✝️",keywords:["伝統","精神的導き","教育","信仰"],rev_keywords:["偏見","束縛","形式主義"]},
+  {n:"VI",name:"恋人たち",sym:"💕",keywords:["愛","選択","調和","価値観"],rev_keywords:["不一致","優柔不断","不誠実"]},
+  {n:"VII",name:"戦車",sym:"🏆",keywords:["勝利","意志","前進","克服"],rev_keywords:["挫折","攻撃性","制御不能"]},
+  {n:"VIII",name:"力",sym:"🦁",keywords:["勇気","内なる強さ","忍耐","自制"],rev_keywords:["弱さ","恐れ","自信喪失"]},
+  {n:"IX",name:"隠者",sym:"🔦",keywords:["内省","独自の道","精神的探求","知恵"],rev_keywords:["孤立","引きこもり","現実逃避"]},
+  {n:"X",name:"運命の輪",sym:"🌀",keywords:["転換点","運命","チャンス","循環"],rev_keywords:["不運","抵抗","逆境"]},
+  {n:"XI",name:"正義",sym:"⚖️",keywords:["公正","真実","バランス","責任"],rev_keywords:["不公平","不誠実","偏り"]},
+  {n:"XII",name:"吊られた男",sym:"🙃",keywords:["犠牲","新視点","待機","悟り"],rev_keywords:["無駄な犠牲","停滞","自己欺き"]},
+  {n:"XIII",name:"死神",sym:"💀",keywords:["変容","終わり","新たな始まり","解放"],rev_keywords:["抵抗","停滞","変化への恐れ"]},
+  {n:"XIV",name:"節制",sym:"🌊",keywords:["バランス","調和","忍耐","中庸"],rev_keywords:["過剰","不均衡","焦り"]},
+  {n:"XV",name:"悪魔",sym:"🔗",keywords:["執着","束縛","欲望","影"],rev_keywords:["解放","束縛からの自由","覚醒"]},
+  {n:"XVI",name:"塔",sym:"⚡",keywords:["突然の変化","崩壊","混乱","目覚め"],rev_keywords:["災難の回避","長引く崩壊","変化への抵抗"]},
+  {n:"XVII",name:"星",sym:"⭐",keywords:["希望","再生","インスピレーション","癒し"],rev_keywords:["絶望","失望","自己不信"]},
+  {n:"XVIII",name:"月",sym:"🌙",keywords:["幻想","恐れ","潜在意識","直感"],rev_keywords:["混乱の解消","真実の発見","恐れの克服"]},
+  {n:"XIX",name:"太陽",sym:"☀️",keywords:["成功","活力","明るさ","喜び"],rev_keywords:["楽観的すぎる","一時的な成功","過信"]},
+  {n:"XX",name:"審判",sym:"🔔",keywords:["覚醒","再生","評価","使命"],rev_keywords:["自己批判","後悔","目的の欠如"]},
+  {n:"XXI",name:"世界",sym:"🌍",keywords:["完成","達成","統合","完全"],rev_keywords:["未完成","遅れ","閉塞感"]}
+];
+
+// 小アルカナ（4スート各14枚 → 略版: エースと絵札のみ16枚追加）
+const MINOR_EXTRA = [
+  {n:"Ace",name:"ワンドのエース",sym:"🕯️",keywords:["情熱の芽生え","新しいプロジェクト","創造力","エネルギー"],rev_keywords:["停滞","エネルギー不足","遅延"]},
+  {n:"Ace",name:"カップのエース",sym:"🏆",keywords:["感情の始まり","愛","直感","豊かさ"],rev_keywords:["感情の空虚","拒絶","感情の抑圧"]},
+  {n:"Ace",name:"ソードのエース",sym:"⚔️",keywords:["知性","新しいアイデア","明晰さ","真実"],rev_keywords:["混乱","悪いスタート","誤った判断"]},
+  {n:"Ace",name:"ペンタクルのエース",sym:"💰",keywords:["物質的豊かさ","新しい機会","安定","現実"],rev_keywords:["機会の損失","不安定","物質主義"]},
+  {n:"King",name:"ワンドのキング",sym:"🔥",keywords:["ビジョン","カリスマ","起業家精神","情熱的なリーダー"],rev_keywords:["独裁","傲慢","衝動的"]},
+  {n:"Queen",name:"カップのクイーン",sym:"💙",keywords:["共感","感情的知性","直感","思いやり"],rev_keywords:["感情的操作","依存","共依存"]},
+  {n:"Knight",name:"ソードのナイト",sym:"🌪️",keywords:["行動力","野心","直接的","知性的挑戦"],rev_keywords:["衝動的","無謀","攻撃的"]},
+  {n:"Page",name:"ペンタクルのページ",sym:"🌱",keywords:["学習","実践的なスキル","努力","着実な成長"],rev_keywords:["不注意","学習の困難","向上心の欠如"]},
+];
+
+const ALL_CARDS = [...MAJOR, ...MINOR_EXTRA];
+
+/* ===== スプレッド定義 ===== */
+const SPREADS = {
+  one: { label:"【1枚引き】今のあなたへのメッセージ", positions:["現在"] },
+  three: { label:"【三択スプレッド】過去・現在・未来", positions:["過去","現在","未来"] },
+  cross: {
+    label:"【ケルト十字】状況の深い鑑定",
+    positions:["現状","課題","過去","未来","潜在意識"]
+  },
+  love: { label:"【恋愛スプレッド】あなた・相手・関係の流れ", positions:["あなた","相手","関係の流れ"] }
+};
+
+/* ===== 状態 ===== */
+let currentSpread = 'one';
+let drawnCards = [];
+let flippedCount = 0;
+let selectedTopics = [];
+
+function toggleTopic(el) {
+  el.classList.toggle('selected');
+  const t = el.dataset.topic;
+  if (el.classList.contains('selected')) {
+    selectedTopics.push(t);
+  } else {
+    selectedTopics = selectedTopics.filter(x=>x!==t);
+  }
+}
+
+function selectSpread(btn) {
+  document.querySelectorAll('.spread-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentSpread = btn.dataset.spread;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i=a.length-1;i>0;i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function startReading() {
+  const sp = SPREADS[currentSpread];
+  const count = sp.positions.length;
+
+  // シャッフル
+  const shuffled = shuffle(ALL_CARDS);
+  drawnCards = shuffled.slice(0,count).map(card=>({
+    ...card,
+    reversed: Math.random()<0.35
+  }));
+  flippedCount = 0;
+
+  document.getElementById('card-area').style.display = 'block';
+  document.getElementById('spread-title').textContent = sp.label;
+  document.getElementById('reading-area').style.display = 'none';
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('btn-shuffle').disabled = true;
+
+  buildCards(sp.positions);
+  document.getElementById('card-area').scrollIntoView({behavior:'smooth'});
+}
+
+function buildCards(positions) {
+  const row = document.getElementById('cards-row');
+  row.innerHTML = '';
+  drawnCards.forEach((card, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'card-slot';
+    slot.innerHTML = `
+      <div class="card-pos-label">${positions[i]}</div>
+      <div class="card" id="card-${i}" onclick="flipCard(${i})">
+        <div class="card-inner">
+          <div class="card-face card-back-face">
+            <div class="card-back-pattern">
+              <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="30" cy="30" r="22" stroke="#6b3fa0" stroke-width="1"/>
+                <circle cx="30" cy="30" r="14" stroke="#6b3fa0" stroke-width="0.7"/>
+                <line x1="30" y1="8" x2="30" y2="52" stroke="#6b3fa0" stroke-width="0.7"/>
+                <line x1="8" y1="30" x2="52" y2="30" stroke="#6b3fa0" stroke-width="0.7"/>
+                <line x1="14" y1="14" x2="46" y2="46" stroke="#6b3fa0" stroke-width="0.5"/>
+                <line x1="46" y1="14" x2="14" y2="46" stroke="#6b3fa0" stroke-width="0.5"/>
+                <polygon points="30,20 33,28 42,28 35,33 38,42 30,37 22,42 25,33 18,28 27,28" fill="rgba(212,175,55,0.3)" stroke="#d4af37" stroke-width="0.7"/>
+              </svg>
+            </div>
+          </div>
+          <div class="card-face card-front-face${card.reversed?' reversed':''}">
+            <div class="card-number">${card.n}</div>
+            <div class="card-symbol">${card.sym}</div>
+            <div class="card-name">${card.name}</div>
+            <div class="reversed-badge">逆位置</div>
+          </div>
+        </div>
+      </div>
+    `;
+    row.appendChild(slot);
+  });
+}
+
+function flipCard(i) {
+  const el = document.getElementById(`card-${i}`);
+  if (el.classList.contains('flipped')) return;
+  el.classList.add('flipped');
+  flippedCount++;
+  if (flippedCount === drawnCards.length) {
+    setTimeout(showReading, 800);
+  }
+}
+
+/* ===== トピック別鑑定 ===== */
+const TOPIC_DATA = {
+  future: {
+    title: "未来の運勢", icon: "🔮",
+    pos: [
+      "{card}が示す通り、これから訪れる流れは{k1}に満ちています。{k2}を意識して過ごすことで、運命は静かに、しかし確実にあなたを良い方向へ導いていくでしょう。焦らず種を蒔き続けてください。",
+      "未来へのカードは{card}。{k1}のエネルギーが少しずつ形になっていく時期です。{k2}に意識を向けることで、思いがけない巡り合わせが訪れるかもしれません。"
+    ],
+    rev: [
+      "{card}（逆位置）が未来に現れたことは、{k1}に関する見直しの時期が来ていることを示しています。{k2}を急ぎすぎず、一度立ち止まって計画を整理することが、結果的に良い未来へつながります。",
+      "未来の流れに{card}が逆位置で現れました。{k1}の面で停滞を感じても、それは終わりではなく準備期間。{k2}を丁寧に扱うことで、道は再び開かれていきます。"
+    ]
+  },
+  love: {
+    title: "恋愛・結婚運", icon: "💞",
+    pos: [
+      "恋愛面では{card}が{k1}の訪れを告げています。パートナーがいる方は{k2}を深める好機。フリーの方は、自然な出会いの中に運命的なつながりが隠れているかもしれません。",
+      "{card}は、愛における{k1}を象徴しています。{k2}を大切にすることで、関係はより誠実で温かなものへと育っていくでしょう。"
+    ],
+    rev: [
+      "{card}（逆位置）は、恋愛において{k1}に向き合う時期であることを示しています。{k2}についてすれ違いがあるなら、無理に進めず、お互いの気持ちを丁寧に確認する時間を持ちましょう。",
+      "恋愛運に現れた{card}の逆位置は、{k1}への気づきを促しています。{k2}を一人で抱え込まず、信頼できる人に話すことで気持ちが整理されていきます。"
+    ]
+  },
+  money: {
+    title: "仕事・お金運", icon: "💰",
+    pos: [
+      "仕事・お金の面では{card}が{k1}を後押ししています。{k2}を活かす場面が増え、努力が形になりやすい時期。新しい提案や挑戦にも良いタイミングです。",
+      "{card}が示すのは、{k1}による安定と発展。{k2}を意識して取り組むことで、評価や収入につながる実りが期待できます。"
+    ],
+    rev: [
+      "{card}（逆位置）は、仕事やお金において{k1}への注意を促しています。{k2}に関する判断は慎重に。大きな決断は少し先に延ばし、情報を整理する時間を持つと良いでしょう。",
+      "金運・仕事運に現れた{card}の逆位置は、{k1}の見直しを示しています。無理な{k2}は避け、足元を固めることが今は最善です。"
+    ]
+  },
+  health: {
+    title: "健康・体調", icon: "🌿",
+    pos: [
+      "健康面では{card}が{k1}を表しています。{k2}を意識した生活リズムを心がけることで、心身ともに良い状態が続くでしょう。",
+      "{card}は、体と心の{k1}を示すカード。{k2}な時間を意識的に作ることで、エネルギーが満ちていきます。"
+    ],
+    rev: [
+      "{card}（逆位置）は、健康面で{k1}への注意を促しています。無理を続けず、{k2}を取り入れて、心身を労わる時間を意識的に作りましょう。",
+      "健康運に現れた{card}の逆位置は、小さな不調のサイン。{k1}を見過ごさず、{k2}を大切にすることで早めに整えることができます。"
+    ]
+  },
+  caution: {
+    title: "人生の注意点", icon: "⚠️",
+    pos: [
+      "{card}は、{k1}という良い流れの中にも、{k2}に対する油断は禁物だと伝えています。順調な時こそ、足元を確認する意識を持ちましょう。",
+      "全体として{k1}な流れの中で、{card}は{k2}について軽視しないようにと示しています。小さな違和感を放置しないことが大切です。"
+    ],
+    rev: [
+      "{card}（逆位置）が示す注意点は、{k1}に関する思い込みです。{k2}について、一度立ち止まって本当にそれが必要かを問い直してみてください。",
+      "注意すべきは{card}が表す{k1}の影響。{k2}に振り回されず、自分の本当の気持ちを確認することが、トラブルを避ける鍵となります。"
+    ]
+  },
+  relationship: {
+    title: "人間関係", icon: "🤝",
+    pos: [
+      "人間関係においては{card}が{k1}の広がりを示しています。{k2}を大切にすることで、周囲との繋がりがより豊かなものになっていくでしょう。",
+      "{card}は、{k1}を通じて人とのご縁が深まる時期を表しています。{k2}な対応を心がけることで、良い関係が築かれていきます。"
+    ],
+    rev: [
+      "{card}（逆位置）は、人間関係において{k1}にまつわる誤解やすれ違いに注意を促しています。{k2}について、相手の立場から見直す時間を持つと良いでしょう。",
+      "人間関係に現れた{card}の逆位置は、{k1}を一人で抱え込みやすい時期であることを示しています。{k2}を意識して、適度な距離感を保つことが大切です。"
+    ]
+  },
+  yearly: {
+    title: "今年の運気", icon: "🎍",
+    pos: [
+      "今年全体の運気には{card}が強く影響し、{k1}をテーマとした一年になりそうです。{k2}を意識して過ごすことで、年間を通して安定した成長が期待できます。",
+      "{card}が示す今年のキーワードは{k1}。{k2}に関わる出来事が、今年のあなたにとって大きな意味を持つでしょう。"
+    ],
+    rev: [
+      "{card}（逆位置）が示す今年は、{k1}についての見直しがテーマとなりそうです。{k2}を急がず、年の前半は基盤づくりに時間をかけると良いでしょう。",
+      "今年の運気に現れた{card}の逆位置は、{k1}に関する課題と向き合う一年であることを示しています。{k2}を丁寧に扱うことで、後半に大きな転機が訪れます。"
+    ]
+  },
+  advice: {
+    title: "開運アドバイス", icon: "🍀",
+    pos: [
+      "開運のカギは{card}が示す{k1}にあります。日常の中で{k2}を意識的に取り入れてみてください。小さな行動の積み重ねが、運気を大きく後押しします。",
+      "{card}からのアドバイスは、{k1}を大切にすること。特に{k2}に関わる選択をするとき、直感を信じてみると良い結果につながりやすいでしょう。"
+    ],
+    rev: [
+      "{card}（逆位置）からのアドバイスは、{k1}を一度見直すこと。{k2}についての考え方を少し変えるだけで、停滞していた運気が動き出すきっかけになります。",
+      "開運のためには、{card}が示す{k1}への気づきが大切です。{k2}に対する執着を少し緩めることで、新しい流れが入ってくるでしょう。"
+    ]
+  }
+};
+
+function generateTopicReading(topic) {
+  const data = TOPIC_DATA[topic];
+  const card = rnd(drawnCards);
+  const keys = card.reversed ? card.rev_keywords : card.keywords;
+  const k1 = rnd(keys);
+  let k2 = rnd(keys.filter(k=>k!==k1));
+  if (!k2) k2 = k1;
+  const templates = card.reversed ? data.rev : data.pos;
+  const text = rnd(templates)
+    .replace(/{card}/g, `「${card.name}」`)
+    .replace(/{k1}/g, k1)
+    .replace(/{k2}/g, k2);
+  return { title: data.title, icon: data.icon, text };
+}
+
+const INTRO = ["このカードが示すのは、","星々が語るのは、","宇宙の声は囁きます——","深い洞察が浮かび上がります。","運命の糸が指し示すのは、"];
+const CONN = ["それはまた、","同時に、","さらに深く見ると、","この流れの中で、","重要なことに、"];
+
+function rnd(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function generateCardReading(card, position, spreadType) {
+  const keys = card.reversed ? card.rev_keywords : card.keywords;
+  const k1 = rnd(keys), k2 = rnd(keys.filter(k=>k!==k1)||keys);
+  const posMap = {
+    "現在":"今あなたが置かれている状況",
+    "過去":"これまでの流れ",
+    "未来":"これから訪れる可能性",
+    "課題":"乗り越えるべき試練",
+    "潜在意識":"心の奥で感じていること",
+    "あなた":"あなたの内面",
+    "相手":"相手が持つエネルギー",
+    "関係の流れ":"二人の間に流れる力"
+  };
+  const posDesc = posMap[position] || position;
+
+  const templates = card.reversed ? [
+    `${rnd(INTRO)}「${card.name}（逆位置）」。${posDesc}において、${k1}が試されているサインです。${rnd(CONN)}${k2}に関する課題が浮き彫りになっています。これは批判ではなく、内側を見つめ直す機会。今こそ立ち止まり、何を手放すべきかを静かに問いかけてみてください。`,
+    `「${card.name}」が逆位置で現れました。${posDesc}の文脈では、${k1}や${k2}のエネルギーが滞っているかもしれません。しかし、すべての停滞は次の前進への準備期間。焦らず、今できることに丁寧に向き合いましょう。`,
+    `${posDesc}に「${card.name}（逆位置）」が寄り添っています。${k1}の面で揺れを感じているなら、それは正直な自分の声。${rnd(CONN)}${k2}を見直すことが、新しい光への扉となるでしょう。`
+  ] : [
+    `${rnd(INTRO)}「${card.name}」。${posDesc}において、${k1}と${k2}のエネルギーが強く働いています。${rnd(CONN)}このカードはあなたに自信を持って前に進むよう告げています。今持っている力を信じてください。`,
+    `「${card.name}」が${posDesc}に輝いています。${k1}の波動が高まり、${k2}の恩恵があなたを包んでいます。${rnd(CONN)}直感を大切にしながら、一歩一歩確かに歩んでいきましょう。`,
+    `${posDesc}に「${card.name}」が現れました。${k1}が満ち、${k2}の可能性が広がっています。${rnd(CONN)}宇宙はあなたの意図に応えようとしています。心を開いて流れに乗ってください。`
+  ];
+  return rnd(templates);
+}
+
+function generateOverall(cards, spreadType, question) {
+  const q = question ? `「${question}」についての問いに対し、` : '';
+  const cardNames = cards.map(c=>c.reversed?`${c.name}（逆）`:c.name).join('・');
+  const positiveCount = cards.filter(c=>!c.reversed).length;
+  const tone = positiveCount >= cards.length/2 ? "前向き" : "慎重";
+
+  const msgs = [
+    `${q}${cardNames}という組み合わせは、あなたの状況に深い意味を投げかけています。全体として${tone}なエネルギーが流れており、変化の兆しが感じられます。自分の内なる声を大切にしながら、一日一日を誠実に生きることが、望む未来への最短距離です。星はいつもあなたを照らしています。`,
+    `${q}今回引かれた${cardNames}は、それぞれが呼応し合い一つのメッセージを紡いでいます。${tone}なエネルギーが基調となり、行動と内省のバランスが鍵となりそうです。恐れず、しかし焦らず——あなたのペースで歩みを進めてください。宇宙はあなたの側にあります。`,
+    `${cardNames}というカードが示す今の流れは、${tone}な方向へと向かっています。大切なのは、外の出来事に振り回されるのではなく、自分自身の中心を保つこと。今日この鑑定があなたに届いたのも、偶然ではありません。必要なメッセージは、すでにあなたの心に届いているはずです。`
+  ];
+  return rnd(msgs);
+}
+
+function showReading() {
+  const sp = SPREADS[currentSpread];
+  const question = document.getElementById('question').value.trim();
+  const container = document.getElementById('reading-cards');
+  container.innerHTML = '';
+
+  document.getElementById('reading-area').style.display = 'block';
+
+  drawnCards.forEach((card, i) => {
+    const rc = document.createElement('div');
+    rc.className = 'reading-card';
+    rc.innerHTML = `
+      <div class="reading-card-header">
+        <div class="reading-symbol">${card.sym}</div>
+        <div class="reading-meta">
+          <div class="reading-position">${sp.positions[i]}</div>
+          <div class="reading-card-name">${card.name}</div>
+          ${card.reversed ? '<div class="reading-reversed">逆位置</div>' : ''}
+        </div>
+      </div>
+      <div class="reading-text">${generateCardReading(card, sp.positions[i], currentSpread)}</div>
+    `;
+    container.appendChild(rc);
+    setTimeout(()=>rc.classList.add('visible'), i*300+100);
+  });
+
+  const overall = document.getElementById('reading-overall');
+  document.getElementById('overall-text').textContent = generateOverall(drawnCards, currentSpread, question);
+  setTimeout(()=>overall.classList.add('visible'), drawnCards.length*300+400);
+
+  const topicContainer = document.getElementById('topic-readings');
+  topicContainer.innerHTML = '';
+  selectedTopics.forEach((topic, idx) => {
+    const r = generateTopicReading(topic);
+    const tc = document.createElement('div');
+    tc.className = 'reading-card';
+    tc.innerHTML = `
+      <div class="reading-card-header">
+        <div class="reading-symbol">${r.icon}</div>
+        <div class="reading-meta">
+          <div class="reading-position">${r.title}</div>
+        </div>
+      </div>
+      <div class="reading-text">${r.text}</div>
+    `;
+    topicContainer.appendChild(tc);
+    setTimeout(()=>tc.classList.add('visible'), drawnCards.length*300+600+idx*250);
+  });
+
+  document.getElementById('reading-area').scrollIntoView({behavior:'smooth'});
+}
+
+function resetAll() {
+  drawnCards = [];
+  flippedCount = 0;
+  document.getElementById('card-area').style.display = 'none';
+  document.getElementById('reading-area').style.display = 'none';
+  document.getElementById('reading-cards').innerHTML = '';
+  document.getElementById('topic-readings').innerHTML = '';
+  document.getElementById('btn-shuffle').disabled = false;
+  document.querySelectorAll('.reading-card').forEach(el=>el.classList.remove('visible'));
+  document.getElementById('reading-overall').classList.remove('visible');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
